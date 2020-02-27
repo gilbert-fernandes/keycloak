@@ -50,6 +50,11 @@ public class JSObjectBuilder {
         return this;
     }
 
+    public JSObjectBuilder disableCheckLoginIframe() {
+        arguments.put("checkLoginIframe", false);
+        return this;
+    }
+
     public JSObjectBuilder loginRequiredOnLoad() {
         arguments.put("onLoad", "login-required");
         return this;
@@ -78,6 +83,10 @@ public class JSObjectBuilder {
         return this;
     }
 
+    private boolean skipQuotes(Object o) {
+        return (o instanceof Integer || o instanceof Boolean);
+    }
+
     public String build() {
         StringBuilder argument = new StringBuilder("{");
         String comma = "";
@@ -86,11 +95,11 @@ public class JSObjectBuilder {
                     .append(option.getKey())
                     .append(" : ");
 
-            if (!(option.getValue() instanceof Integer)) argument.append("\"");
+            if (!skipQuotes(option.getValue())) argument.append("\"");
 
             argument.append(option.getValue());
 
-            if (!(option.getValue() instanceof Integer)) argument.append("\"");
+            if (!skipQuotes(option.getValue())) argument.append("\"");
             comma = ",";
         }
 

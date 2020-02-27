@@ -52,10 +52,16 @@ public class JWKSUtils {
             if (jwk.getPublicKeyUse().equals(requestedUse.asString()) && parser.isKeyTypeSupported(jwk.getKeyType())) {
                 KeyWrapper keyWrapper = new KeyWrapper();
                 keyWrapper.setKid(jwk.getKeyId());
-                keyWrapper.setAlgorithm(jwk.getAlgorithm());
+                if (jwk.getAlgorithm() != null) {
+                    keyWrapper.setAlgorithm(jwk.getAlgorithm());
+                }
+                else if (jwk.getKeyType().equalsIgnoreCase("RSA")){
+                    //backwards compatibility: RSA keys without "alg" field set are considered RS256
+                    keyWrapper.setAlgorithm("RS256");
+                }
                 keyWrapper.setType(jwk.getKeyType());
                 keyWrapper.setUse(getKeyUse(jwk.getPublicKeyUse()));
-                keyWrapper.setVerifyKey(parser.toPublicKey());
+                keyWrapper.setPublicKey(parser.toPublicKey());
                 result.put(keyWrapper.getKid(), keyWrapper);
             }
         }

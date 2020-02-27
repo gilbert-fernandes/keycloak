@@ -38,6 +38,7 @@ import org.jboss.shrinkwrap.api.asset.UrlAsset;
 
 import org.junit.Assert;
 import static org.keycloak.testsuite.auth.page.AuthRealm.DEMO;
+import static org.keycloak.testsuite.util.WaitUtils.waitForPageToLoad;
 
 public abstract class AbstractServletsAdapterTest extends AbstractAdapterTest {
 
@@ -120,6 +121,12 @@ public abstract class AbstractServletsAdapterTest extends AbstractAdapterTest {
                 .addClasses(servletClasses)
                 .addAsWebInfResource(jbossDeploymentStructure, JBOSS_DEPLOYMENT_STRUCTURE_XML);
 
+        // if a role-mappings.properties file exist in WEB-INF, include it in the deployment.
+        URL roleMappingsConfig = AbstractServletsAdapterTest.class.getResource(webInfPath + "role-mappings.properties");
+        if(roleMappingsConfig != null) {
+            deployment.addAsWebInfResource(roleMappingsConfig, "role-mappings.properties");
+        }
+
         String webXMLContent;
         try {
             webXMLContent = IOUtils.toString(webXML.openStream(), Charset.forName("UTF-8"))
@@ -127,12 +134,12 @@ public abstract class AbstractServletsAdapterTest extends AbstractAdapterTest {
 
             if (clockSkewSec != null) {
                 String keycloakSamlXMLContent = IOUtils.toString(keycloakSAMLConfig.openStream(), Charset.forName("UTF-8"))
-                    .replace("%CLOCK_SKEW%", String.valueOf(clockSkewSec));
+                    .replace("%CLOCK_SKEW%", "${allowed.clock.skew:" + String.valueOf(clockSkewSec) + "}");
                 deployment.addAsWebInfResource(new StringAsset(keycloakSamlXMLContent), "keycloak-saml.xml");
             } else {
                 deployment.addAsWebInfResource(keycloakSAMLConfig, "keycloak-saml.xml");
             }
-            
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -211,7 +218,7 @@ public abstract class AbstractServletsAdapterTest extends AbstractAdapterTest {
                     .build().toString();
 
             DroneUtils.getCurrentDriver().navigate().to(timeOffsetUri);
-            WaitUtils.waitUntilElement(By.tagName("body")).is().visible();
+            waitForPageToLoad();
             String pageSource = DroneUtils.getCurrentDriver().getPageSource();
             System.out.println(pageSource);
         }

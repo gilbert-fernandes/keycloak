@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
+import java.util.stream.Stream;
+import javax.persistence.LockModeType;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -70,6 +72,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         this.session = session;
     }
 
+    @Override
     public UserEntity getEntity() {
         return user;
     }
@@ -112,32 +115,35 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
 
     @Override
     public void setSingleAttribute(String name, String value) {
-        String firstExistingAttrId = null;
-        List<UserAttributeEntity> toRemove = new ArrayList<>();
-        for (UserAttributeEntity attr : user.getAttributes()) {
-            if (attr.getName().equals(name)) {
-                if (firstExistingAttrId == null) {
-                    attr.setValue(value);
-                    firstExistingAttrId = attr.getId();
-                } else {
-                    toRemove.add(attr);
+        if (value == null) {
+            user.getAttributes().removeIf(a -> a.getName().equals(name));
+        } else {
+            String firstExistingAttrId = null;
+            List<UserAttributeEntity> toRemove = new ArrayList<>();
+            for (UserAttributeEntity attr : user.getAttributes()) {
+                if (attr.getName().equals(name)) {
+                    if (firstExistingAttrId == null) {
+                        attr.setValue(value);
+                        firstExistingAttrId = attr.getId();
+                    } else {
+                        toRemove.add(attr);
+                    }
                 }
             }
-        }
 
-        if (firstExistingAttrId != null) {
-            // Remove attributes through HQL to avoid StaleUpdateException
-            Query query = em.createNamedQuery("deleteUserAttributesByNameAndUserOtherThan");
-            query.setParameter("name", name);
-            query.setParameter("userId", user.getId());
-            query.setParameter("attrId", firstExistingAttrId);
-            int numUpdated = query.executeUpdate();
+            if (firstExistingAttrId != null) {
+                // Remove attributes through HQL to avoid StaleUpdateException
+                Query query = em.createNamedQuery("deleteUserAttributesByNameAndUserOtherThan");
+                query.setParameter("name", name);
+                query.setParameter("userId", user.getId());
+                query.setParameter("attrId", firstExistingAttrId);
+                int numUpdated = query.executeUpdate();
 
-            // Remove attribute from local entity
-            user.getAttributes().removeAll(toRemove);
-        } else {
-
-            persistAttributeValue(name, value);
+                // Remove attribute from local entity
+                user.getAttributes().removeAll(toRemove);
+            } else {
+                persistAttributeValue(name, value);
+            }
         }
     }
 
@@ -145,10 +151,8 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
     public void setAttribute(String name, List<String> values) {
         // Remove all existing
         removeAttribute(name);
-
-        // Put all new
-        for (String value : values) {
-            persistAttributeValue(name, value);
+        for (Iterator<String> it = values.stream().filter(Objects::nonNull).iterator(); it.hasNext();) {
+            persistAttributeValue(name, it.next());
         }
     }
 
@@ -392,6 +396,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         if (user == null || group == null) return;
 
         TypedQuery<UserGroupMembershipEntity> query = getUserGroupMappingQuery(group);
+        query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
         List<UserGroupMembershipEntity> results = query.getResultList();
         if (results.size() == 0) return;
         for (UserGroupMembershipEntity entity : results) {
@@ -480,6 +485,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         if (user == null || role == null) return;
 
         TypedQuery<UserRoleMappingEntity> query = getUserRoleMappingEntityTypedQuery(role);
+        query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
         List<UserRoleMappingEntity> results = query.getResultList();
         if (results.size() == 0) return;
         for (UserRoleMappingEntity entity : results) {

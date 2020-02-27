@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.toIntExact;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -47,6 +48,9 @@ import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude;
+import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
 import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlDoesntStartWith;
 import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlStartsWith;
 import static org.keycloak.testsuite.util.WaitUtils.waitForPageToLoad;
@@ -55,6 +59,7 @@ import static org.keycloak.testsuite.util.WaitUtils.waitUntilElement;
 /**
  * @author mhajas
  */
+@AuthServerContainerExclude(AuthServer.REMOTE)
 public class JavascriptAdapterTest extends AbstractJavascriptTest {
 
     private String testAppUrl;
@@ -79,11 +84,16 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
 
     @Before
     public void setDefaultEnvironment() {
-        testAppUrl = authServerContextRootPage + JAVASCRIPT_URL + "/index.html";
+        testAppUrl = authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/index.html";
 
         jsDriverTestRealmLoginPage.setAuthRealm(REALM_NAME);
         oAuthGrantPage.setAuthRealm(REALM_NAME);
         applicationsPage.setAuthRealm(REALM_NAME);
+
+        jsDriver.navigate().to(oauth.getLoginFormUrl());
+        waitForPageToLoad();
+        events.poll();
+        jsDriver.manage().deleteAllCookies();
 
         jsDriver.navigate().to(testAppUrl);
 
@@ -124,25 +134,6 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
     }
 
     @Test
-    public void testLoginWithKCLocale() {
-        ProfileAssume.assumeCommunity();
-
-        RealmRepresentation testRealmRep = testRealmResource().toRepresentation();
-        testRealmRep.setInternationalizationEnabled(true);
-        testRealmRep.setDefaultLocale("en");
-        testRealmRep.setSupportedLocales(Stream.of("en", "de").collect(Collectors.toSet()));
-        testRealmResource().update(testRealmRep);
-        
-        testExecutor.init(defaultArguments(), this::assertInitNotAuth)
-                .login(this::assertOnLoginPage)
-                .loginForm(testUser, this::assertOnTestAppUrl)
-                .init(defaultArguments(), this::assertSuccessfullyLoggedIn)
-                .login("{kcLocale: 'de'}", assertLocaleIsSet("de"))
-                .init(defaultArguments(), this::assertSuccessfullyLoggedIn)
-                .login("{kcLocale: 'en'}", assertLocaleIsSet("en"));
-    }
-
-    @Test
     public void testLoginWithPkceS256() {
         JSObjectBuilder pkceS256 = defaultArguments().pkceS256();
         testExecutor.init(pkceS256, this::assertInitNotAuth)
@@ -151,6 +142,58 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
                 .init(pkceS256, this::assertSuccessfullyLoggedIn)
                 .logout(this::assertOnTestAppUrl)
                 .init(pkceS256, this::assertInitNotAuth);
+    }
+
+    @Test
+    public void testSilentCheckSso() {
+        JSObjectBuilder checkSSO = defaultArguments().checkSSOOnLoad();
+        testExecutor.init(checkSSO, this::assertInitNotAuth)
+                .login(this::assertOnLoginPage)
+                .loginForm(testUser, this::assertOnTestAppUrl)
+                .init(checkSSO, this::assertSuccessfullyLoggedIn)
+                .refresh()
+                .init(checkSSO
+                        .add("silentCheckSsoRedirectUri", authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/silent-check-sso.html")
+                        , this::assertSuccessfullyLoggedIn);
+    }
+
+    @Test
+    public void testSilentCheckSsoLoginWithLoginIframeDisabled() {
+        JSObjectBuilder checkSSO = defaultArguments().checkSSOOnLoad();
+        testExecutor.init(checkSSO, this::assertInitNotAuth)
+                .login(this::assertOnLoginPage)
+                .loginForm(testUser, this::assertOnTestAppUrl)
+                .init(checkSSO, this::assertSuccessfullyLoggedIn)
+                .refresh()
+                .init(checkSSO
+                        .disableCheckLoginIframe()
+                        .add("silentCheckSsoRedirectUri", authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/silent-check-sso.html")
+                        , this::assertSuccessfullyLoggedIn);
+    }
+
+    @Test
+    public void testSilentCheckSsoWithoutRedirectUri() {
+        JSObjectBuilder checkSSO = defaultArguments().checkSSOOnLoad();
+        try {
+            testExecutor.init(checkSSO, this::assertInitNotAuth)
+                    .login(this::assertOnLoginPage)
+                    .loginForm(testUser, this::assertOnTestAppUrl)
+                    .init(checkSSO, this::assertSuccessfullyLoggedIn)
+                    .refresh()
+                    .init(checkSSO);
+            fail();
+        } catch (WebDriverException e) {
+            // should happen
+        }
+    }
+
+    @Test
+    public void testSilentCheckSsoNotAuthenticated() {
+        JSObjectBuilder checkSSO = defaultArguments().checkSSOOnLoad();
+        testExecutor.init(checkSSO
+                .add("checkLoginIframe", false)
+                .add("silentCheckSsoRedirectUri", authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/silent-check-sso.html")
+                , this::assertInitNotAuth);
     }
 
     @Test
@@ -322,7 +365,8 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
                 .addHeader("Authorization", "Bearer ' + keycloak.token + '");
 
         testExecutor.init(defaultArguments())
-                .sendXMLHttpRequest(request, assertResponseStatus(401))
+                // Possibility of 0 and 401 is caused by this issue: https://issues.redhat.com/browse/KEYCLOAK-12686
+                .sendXMLHttpRequest(request, response -> assertThat(response, hasEntry(is("status"), anyOf(is(0L), is(401L)))))
                 .refresh();
         if (!"phantomjs".equals(System.getProperty("js.browser"))) {
             // I have no idea why, but this request doesn't work with phantomjs, it works in chrome
@@ -366,7 +410,8 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
 
         setTimeOffset(67);
         testExecutor.addTimeSkew(-34)
-                .sendXMLHttpRequest(request, assertResponseStatus(401))
+                // Possibility of 0 and 401 is caused by this issue: https://issues.redhat.com/browse/KEYCLOAK-12686
+                .sendXMLHttpRequest(request, response -> assertThat(response, hasEntry(is("status"), anyOf(is(0L), is(401L)))))
                 .refreshToken(5, assertEventsContains("Auth Refresh Success"))
                 .sendXMLHttpRequest(request, assertResponseStatus(200));
     }
@@ -427,6 +472,22 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
 
                             assertThat(((String) response.get("responseHeaders")).toLowerCase(), containsString("location: " + authServerContextRootPage.toString() + "/auth/admin/realms/" + REALM_NAME + "/users/" + users.get(0).getId()));
                         });
+    }
+
+    @Test
+    public void equalsSignInRedirectUrl() {
+        testAppUrl = authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/index.html?test=bla=bla&super=man";
+        jsDriver.navigate().to(testAppUrl);
+
+        JSObjectBuilder arguments = defaultArguments();
+
+        testExecutor.init(arguments, this::assertInitNotAuth)
+                .login(this::assertOnLoginPage)
+                .loginForm(testUser, this::assertOnTestAppUrl)
+                .init(arguments, (driver1, output1, events2) -> {
+                    assertTrue(driver1.getCurrentUrl().contains("bla=bla"));
+                    assertSuccessfullyLoggedIn(driver1, output1, events2);
+                });
     }
 
     @Test

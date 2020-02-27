@@ -26,9 +26,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.keycloak.broker.saml.SAMLIdentityProviderConfig.*;
+import static org.keycloak.protocol.saml.SamlProtocol.SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE;
+import static org.keycloak.protocol.saml.SamlProtocol.SAML_IDP_INITIATED_SSO_URL_NAME;
 import static org.keycloak.testsuite.broker.BrokerTestConstants.*;
 import static org.keycloak.testsuite.broker.BrokerTestTools.*;
-
 
 public class KcSamlBrokerConfiguration implements BrokerConfiguration {
 
@@ -75,7 +76,7 @@ public class KcSamlBrokerConfiguration implements BrokerConfiguration {
         attributes.put(SamlConfigAttributes.SAML_AUTHNSTATEMENT, "true");
         attributes.put(SamlProtocol.SAML_SINGLE_LOGOUT_SERVICE_URL_POST_ATTRIBUTE,
                 getAuthRoot(suiteContext) + "/auth/realms/" + REALM_CONS_NAME + "/broker/" + IDP_SAML_ALIAS + "/endpoint");
-        attributes.put(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE,
+        attributes.put(SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE,
                 getAuthRoot(suiteContext) + "/auth/realms/" + REALM_CONS_NAME + "/broker/" + IDP_SAML_ALIAS + "/endpoint");
         attributes.put(SamlConfigAttributes.SAML_FORCE_NAME_ID_FORMAT_ATTRIBUTE, "true");
         attributes.put(SamlConfigAttributes.SAML_NAME_ID_FORMAT_ATTRIBUTE, "username");
@@ -123,8 +124,8 @@ public class KcSamlBrokerConfiguration implements BrokerConfiguration {
         userAttrMapper.setProtocolMapper(UserAttributeStatementMapper.PROVIDER_ID);
 
         Map<String, String> userAttrMapperConfig = userAttrMapper.getConfig();
-        userAttrMapperConfig.put(ProtocolMapperUtils.USER_ATTRIBUTE, AbstractUserAttributeMapperTest.ATTRIBUTE_TO_MAP_NAME);
-        userAttrMapperConfig.put(AttributeStatementHelper.SAML_ATTRIBUTE_NAME, AbstractUserAttributeMapperTest.ATTRIBUTE_TO_MAP_NAME);
+        userAttrMapperConfig.put(ProtocolMapperUtils.USER_ATTRIBUTE, KcOidcBrokerConfiguration.ATTRIBUTE_TO_MAP_NAME);
+        userAttrMapperConfig.put(AttributeStatementHelper.SAML_ATTRIBUTE_NAME, KcOidcBrokerConfiguration.ATTRIBUTE_TO_MAP_NAME);
         userAttrMapperConfig.put(AttributeStatementHelper.SAML_ATTRIBUTE_NAMEFORMAT, AttributeStatementHelper.BASIC);
         userAttrMapperConfig.put(AttributeStatementHelper.FRIENDLY_NAME, "");
 
@@ -168,6 +169,8 @@ public class KcSamlBrokerConfiguration implements BrokerConfiguration {
             .addRedirectUri("https://localhost:8543/sales-post/*")
             .attribute(SamlConfigAttributes.SAML_AUTHNSTATEMENT, SamlProtocol.ATTRIBUTE_TRUE_VALUE)
             .attribute(SamlConfigAttributes.SAML_CLIENT_SIGNATURE_ATTRIBUTE, SamlProtocol.ATTRIBUTE_FALSE_VALUE)
+            .attribute(SAML_IDP_INITIATED_SSO_URL_NAME, "sales-post")
+            .attribute(SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE, "https://localhost:8180/sales-post/saml")
             .build(),
           ClientBuilder.create()
             .id("broker-app")
@@ -195,7 +198,7 @@ public class KcSamlBrokerConfiguration implements BrokerConfiguration {
         config.put(SINGLE_SIGN_ON_SERVICE_URL, getAuthRoot(suiteContext) + "/auth/realms/" + REALM_PROV_NAME + "/protocol/saml");
         config.put(SINGLE_LOGOUT_SERVICE_URL, getAuthRoot(suiteContext) + "/auth/realms/" + REALM_PROV_NAME + "/protocol/saml");
         config.put(NAME_ID_POLICY_FORMAT, "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress");
-        config.put(FORCE_AUTHN, "true");
+        config.put(FORCE_AUTHN, "false");
         config.put(POST_BINDING_RESPONSE, "true");
         config.put(POST_BINDING_AUTHN_REQUEST, "true");
         config.put(VALIDATE_SIGNATURE, "false");

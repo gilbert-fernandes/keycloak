@@ -166,9 +166,7 @@ public class ResourceSetService {
 
         storeFactory.getResourceStore().delete(id);
 
-        if (authorization.getRealm().isAdminEventsEnabled()) {
-            audit(toRepresentation(resource, resourceServer, authorization), OperationType.DELETE);
-        }
+        audit(toRepresentation(resource, resourceServer, authorization), OperationType.DELETE);
 
         return Response.noContent().build();
     }
@@ -337,10 +335,11 @@ public class ResourceSetService {
                          @QueryParam("type") String type,
                          @QueryParam("scope") String scope,
                          @QueryParam("matchingUri") Boolean matchingUri,
+                         @QueryParam("exactName") Boolean exactName,
                          @QueryParam("deep") Boolean deep,
                          @QueryParam("first") Integer firstResult,
                          @QueryParam("max") Integer maxResult) {
-        return find(id, name, uri, owner, type, scope, matchingUri, deep, firstResult, maxResult, (BiFunction<Resource, Boolean, ResourceRepresentation>) (resource, deep1) -> toRepresentation(resource, resourceServer, authorization, deep1));
+        return find(id, name, uri, owner, type, scope, matchingUri, exactName, deep, firstResult, maxResult, (BiFunction<Resource, Boolean, ResourceRepresentation>) (resource, deep1) -> toRepresentation(resource, resourceServer, authorization, deep1));
     }
 
     public Response find(@QueryParam("_id") String id,
@@ -350,6 +349,7 @@ public class ResourceSetService {
                          @QueryParam("type") String type,
                          @QueryParam("scope") String scope,
                          @QueryParam("matchingUri") Boolean matchingUri,
+                         @QueryParam("exactName") Boolean exactName,
                          @QueryParam("deep") Boolean deep,
                          @QueryParam("first") Integer firstResult,
                          @QueryParam("max") Integer maxResult,
@@ -370,6 +370,10 @@ public class ResourceSetService {
 
         if (name != null && !"".equals(name.trim())) {
             search.put("name", new String[] {name});
+            
+            if (exactName != null && exactName) {
+                search.put(Resource.EXACT_NAME, new String[] {Boolean.TRUE.toString()});
+            }
         }
 
         if (uri != null && !"".equals(uri.trim())) {
@@ -471,12 +475,10 @@ public class ResourceSetService {
     }
 
     public void audit(ResourceRepresentation resource, String id, OperationType operation) {
-        if (authorization.getRealm().isAdminEventsEnabled()) {
-            if (id != null) {
-                adminEvent.operation(operation).resourcePath(session.getContext().getUri(), id).representation(resource).success();
-            } else {
-                adminEvent.operation(operation).resourcePath(session.getContext().getUri()).representation(resource).success();
-            }
+        if (id != null) {
+            adminEvent.operation(operation).resourcePath(session.getContext().getUri(), id).representation(resource).success();
+        } else {
+            adminEvent.operation(operation).resourcePath(session.getContext().getUri()).representation(resource).success();
         }
     }
 }
