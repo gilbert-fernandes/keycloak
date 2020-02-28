@@ -44,7 +44,7 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
     private KeyPair keyPair;
     private JWK publicKeyJwk;
 
-    private int tokenTimeout;
+    private long tokenTimeout;
 
     @Override
     public String getId() {
@@ -60,7 +60,7 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
         this.tokenTimeout = tokenTimeout;
     }
 
-    protected int getTokenTimeout() {
+    protected long getTokenTimeout() {
         return tokenTimeout;
     }
 
@@ -144,10 +144,10 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
         reqToken.subject(clientId);
         reqToken.audience(realmInfoUrl);
 
-        int now = Time.currentTime();
-        reqToken.issuedAt(now);
-        reqToken.expiration(now + this.tokenTimeout);
-        reqToken.notBefore(now);
+        long now = Time.currentTime();
+        reqToken.iat(now);
+        reqToken.exp(now + this.tokenTimeout);
+        reqToken.nbf(now);
 
         return reqToken;
     }
