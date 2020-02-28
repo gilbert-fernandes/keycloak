@@ -194,20 +194,16 @@ public class AccessToken extends IDToken {
         return (AccessToken) super.id(id);
     }
 
-    @Override
-    public AccessToken expiration(int expiration) {
-        return (AccessToken) super.expiration(expiration);
+    public AccessToken expiration(long expiration) {
+        return (AccessToken) super.exp(expiration);
     }
 
-    @Override
-    public AccessToken notBefore(int notBefore) {
-        return (AccessToken) super.notBefore(notBefore);
+    public AccessToken notBefore(long notBefore) {
+        return (AccessToken) super.nbf(notBefore);
     }
 
-
-    @Override
-    public AccessToken issuedAt(int issuedAt) {
-        return (AccessToken) super.issuedAt(issuedAt);
+    public AccessToken issuedAt(long issuedAt) {
+        return (AccessToken) super.iat(issuedAt);
     }
 
     @Override
