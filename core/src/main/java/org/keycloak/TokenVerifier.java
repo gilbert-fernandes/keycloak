@@ -17,6 +17,7 @@
 
 package org.keycloak;
 
+import java.nio.charset.StandardCharsets;
 import org.keycloak.common.VerificationException;
 import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.exceptions.TokenSignatureInvalidException;
@@ -420,7 +421,7 @@ public class TokenVerifier<T extends JsonWebToken> {
     public void verifySignature() throws VerificationException {
         if (this.verifier != null) {
             try {
-                if (!verifier.verify(jws.getEncodedSignatureInput().getBytes("UTF-8"), jws.getSignature())) {
+                if (!verifier.verify(jws.getEncodedSignatureInput().getBytes(StandardCharsets.UTF_8), jws.getSignature())) {
                     throw new TokenSignatureInvalidException(token, "Invalid token signature");
                 }
             } catch (Exception e) {

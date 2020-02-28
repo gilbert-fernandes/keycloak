@@ -17,6 +17,7 @@
 
 package org.keycloak.util;
 
+import java.nio.charset.StandardCharsets;
 import org.keycloak.common.util.Base64;
 
 import java.io.IOException;
@@ -32,14 +33,7 @@ public class BasicAuthHelper
     {
         StringBuffer buf = new StringBuffer(username);
         buf.append(':').append(password);
-        try
-        {
-            return "Basic " + Base64.encodeBytes(buf.toString().getBytes("UTF-8"));
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return "Basic " + Base64.encodeBytes(buf.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     public static String[] parseHeader(String header)
