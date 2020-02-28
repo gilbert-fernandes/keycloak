@@ -218,7 +218,7 @@ public class SystemInfoRepresentation {
         diff[3] = (diffInSeconds >= 60 ? diffInSeconds % 60 : diffInSeconds); // min
         diff[2] = (diffInSeconds = (diffInSeconds / 60)) >= 60 ? diffInSeconds % 60 : diffInSeconds; // hours
         diff[1] = (diffInSeconds = (diffInSeconds / 60)) >= 24 ? diffInSeconds % 24 : diffInSeconds; // days
-        diff[0] = (diffInSeconds = (diffInSeconds / 24));
+        diff[0] = (diffInSeconds / 24);
 
         return String.format(
                 "%d day%s, %d hour%s, %d minute%s, %d second%s",
