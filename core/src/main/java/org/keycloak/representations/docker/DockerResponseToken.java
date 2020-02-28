@@ -41,15 +41,13 @@ public class DockerResponseToken extends JsonWebToken {
         return this;
     }
 
-    @Override
-    public DockerResponseToken expiration(final int expiration) {
-        super.expiration(expiration);
+    public DockerResponseToken expiration(final long expiration) {
+        super.exp(expiration);
         return this;
     }
 
-    @Override
-    public DockerResponseToken notBefore(final int notBefore) {
-        super.notBefore(notBefore);
+    public DockerResponseToken notBefore(final long notBefore) {
+        super.nbf(notBefore);
         return this;
     }
 
@@ -59,9 +57,8 @@ public class DockerResponseToken extends JsonWebToken {
         return this;
     }
 
-    @Override
-    public DockerResponseToken issuedAt(final int issuedAt) {
-        super.issuedAt(issuedAt);
+    public DockerResponseToken issuedAt(final long issuedAt) {
+        super.iat(issuedAt);
         return this;
     }
 

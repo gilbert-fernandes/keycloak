@@ -41,9 +41,6 @@ public class AccessToken extends IDToken {
         @JsonProperty("verify_caller")
         protected Boolean verifyCaller;
 
-        public Access() {
-        }
-
         public Access clone() {
             Access access = new Access();
             access.verifyCaller = verifyCaller;
@@ -150,26 +147,29 @@ public class AccessToken extends IDToken {
     /**
      * Does the realm require verifying the caller?
      *
-     * @return
+     * @return boolean
      */
     @JsonIgnore
     public boolean isVerifyCaller() {
         if (getRealmAccess() != null && getRealmAccess().getVerifyCaller() != null)
-            return getRealmAccess().getVerifyCaller().booleanValue();
+            return getRealmAccess().getVerifyCaller();
         return false;
     }
 
     /**
      * Does the resource override the requirement of verifying the caller?
      *
-     * @param resource
-     * @return
+     * @param resource resource name
+     * @return boolean
      */
     @JsonIgnore
     public boolean isVerifyCaller(String resource) {
         Access access = getResourceAccess(resource);
-        if (access != null && access.getVerifyCaller() != null) return access.getVerifyCaller().booleanValue();
-        return false;
+        if (access != null && access.getVerifyCaller() != null) {
+            return access.getVerifyCaller();
+        } else {
+            return false;
+        }
     }
 
     @JsonIgnore
