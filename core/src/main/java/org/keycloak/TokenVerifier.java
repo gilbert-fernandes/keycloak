@@ -54,7 +54,7 @@ public class TokenVerifier<T extends JsonWebToken> {
      * @param <T> Type of the token handled by this predicate.
      */
     // @FunctionalInterface
-    public static interface Predicate<T extends JsonWebToken> {
+    public interface Predicate<T extends JsonWebToken> {
         /**
          * Performs a single check on the given token verifier.
          * @param t Token, guaranteed to be non-null.

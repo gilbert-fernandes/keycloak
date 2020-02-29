@@ -45,7 +45,7 @@ public class Config {
          return configProvider.scope(scope);
     }
 
-    public static interface ConfigProvider {
+    public interface ConfigProvider {
 
         String getProvider(String spi);
 
@@ -158,7 +158,7 @@ public class Config {
     /**
      * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
      */
-    public static interface Scope {
+    public interface Scope {
 
         String get(String key);
 
