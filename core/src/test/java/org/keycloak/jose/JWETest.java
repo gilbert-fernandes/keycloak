@@ -172,7 +172,7 @@ public class JWETest {
         byte[] random = JWEUtils.generateSecret(8);
         System.out.print("new byte[] = {");
         for (byte b : random) {
-            System.out.print(""+Byte.toString(b)+",");
+            System.out.print(""+ b +",");
         }
     }
 
