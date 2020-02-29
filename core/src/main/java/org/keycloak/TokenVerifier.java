@@ -113,7 +113,7 @@ public class TokenVerifier<T extends JsonWebToken> {
 
             return true;
         }
-    };
+    }
 
     public static class TokenTypeCheck implements Predicate<JsonWebToken> {
 
@@ -132,7 +132,7 @@ public class TokenVerifier<T extends JsonWebToken> {
             }
             return true;
         }
-    };
+    }
 
 
     public static class AudienceCheck implements Predicate<JsonWebToken> {
@@ -160,7 +160,7 @@ public class TokenVerifier<T extends JsonWebToken> {
 
             throw new VerificationException("Expected audience not available in the token");
         }
-    };
+    }
 
 
     public static class IssuedForCheck implements Predicate<JsonWebToken> {
